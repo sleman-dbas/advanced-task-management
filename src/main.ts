@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import  cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -10,7 +11,9 @@ async function bootstrap() {
   
   // الأمان
   app.use(helmet());
-  
+
+  app.use(cookieParser());
+
   // التحقق من صحة البيانات
   app.useGlobalPipes(
     new ValidationPipe({
