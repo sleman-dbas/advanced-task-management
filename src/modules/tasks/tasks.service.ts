@@ -6,6 +6,10 @@ import { Project } from '../../database/entities/project.entity';
 import { User } from '../../database/entities/user.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { Inject, forwardRef } from '@nestjs/common';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
+
 
 @Injectable()
 export class TasksService {
@@ -16,6 +20,9 @@ export class TasksService {
     private projectRepo: Repository<Project>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @Inject(forwardRef(() => NotificationsGateway))
+    private notificationsGateway: NotificationsGateway,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createDto: CreateTaskDto, creator: User): Promise<Task> {
@@ -45,8 +52,25 @@ export class TasksService {
       assignee: assignee || undefined,
       project,
     });
-    return this.taskRepo.save(task);
+    const savedTask = await this.taskRepo.save(task);
+
+     // إرسال إشعار للمستخدم المعين إذا كان موجوداً
+    if (task.assignee && task.assignee.id !== creator.id) {
+      const notification = await this.notificationsService.createNotification(
+        task.assignee.id,
+        'task_assigned',
+        {
+          taskId: task.id,
+          title: task.title,
+          projectName: project.name,
+          assignedBy: creator.email,
+        },
+      );
+      this.notificationsGateway.sendNotificationToUser(task.assignee.id, notification);
+    }
+      return savedTask;
   }
+  
 
   async findAll(user: User, projectId?: string): Promise<Task[]> {
     const query = this.taskRepo
@@ -78,13 +102,37 @@ export class TasksService {
   }
 
   async update(id: string, updateDto: UpdateTaskDto, user: User): Promise<Task> {
-    const task = await this.findOne(id, user);
-    // يمكن لأي عضو تعديل المهمة (يمكن تحسين الصلاحية لاحقاً)
-    Object.assign(task, updateDto);
-    if (updateDto.status === TaskStatus.DONE && !task.completedAt) {
-      task.completedAt = new Date();
+    // 1. Fetch the existing task with necessary relations
+    const oldTask = await this.findOne(id, user);
+
+    // 2. Apply the updates
+    Object.assign(oldTask, updateDto);
+
+    // 3. If status is DONE and completedAt not set, set it
+    if (updateDto.status === TaskStatus.DONE && !oldTask.completedAt) {
+      oldTask.completedAt = new Date();
     }
-    return this.taskRepo.save(task);
+
+    // 4. Save the updated task
+    const updatedTask = await this.taskRepo.save(oldTask);
+
+    // 5. Send notification if the status has changed and the task has an assignee
+    if (updateDto.status && updateDto.status !== oldTask.status && updatedTask.assignee) {
+      const notification = await this.notificationsService.createNotification(
+        updatedTask.assignee.id,
+        'task_status_changed',
+        {
+          taskId: updatedTask.id,
+          title: updatedTask.title,
+          oldStatus: oldTask.status,
+          newStatus: updatedTask.status,
+          updatedBy: user.email,
+        },
+      );
+      this.notificationsGateway.sendNotificationToUser(updatedTask.assignee.id, notification);
+    }
+
+    return updatedTask;
   }
 
   async remove(id: string, user: User): Promise<void> {
