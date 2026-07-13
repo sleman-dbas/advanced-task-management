@@ -9,6 +9,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     TasksModule,
     CommentsModule,
     NotificationsModule,
+    AttachmentsModule,
   ],
 })
 export class AppModule {}

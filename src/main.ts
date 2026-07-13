@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import  cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,6 +27,21 @@ async function bootstrap() {
   // تفعيل CORS للتطوير
   app.enableCors();
   
+
+   
+  // إعداد Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Advanced Task Management API')
+    .setDescription('API documentation for the Advanced Task Management System')
+    .setVersion('1.0')
+    .addBearerAuth() // لإضافة JWT authentication
+    .addCookieAuth('refresh_token')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+  
+
+
   // تعيين بادئة عالمية للـ API
   app.setGlobalPrefix('api/v1');
   

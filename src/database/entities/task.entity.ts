@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { User } from './user.entity';
 import { Project } from './project.entity';
 import { Comment } from './comment.entity';
+import { Attachment } from './attachment.entity';
 
 export enum TaskStatus {
   TODO = 'todo',
@@ -36,6 +37,9 @@ export class Task {
 
   @ManyToOne(() => Project, project => project.tasks, { onDelete: 'CASCADE' })
   project: Project;
+
+  @OneToMany(() => Attachment, (attachment) => attachment.task)
+  attachments: Attachment[];
 
   @Column({
     type: 'enum',

@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: task-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: task_management
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - task-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: task-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - task-network
+
+  api:
+    build: .
+    container_name: task-api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: task_management
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - task-network
+
+volumes:
+  postgres_data:
+
+networks:
+  task-network:
+    driver: bridge

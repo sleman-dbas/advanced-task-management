@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { User } from './user.entity';
 import { Task } from './task.entity';
+import { Attachment } from './attachment.entity';
 
 export enum ProjectStatus {
   ACTIVE = 'active',
@@ -42,6 +43,9 @@ export class Project {
 
   @OneToMany(() => Task, task => task.project, { cascade: true })
   tasks: Task[];
+
+  @OneToMany(() => Attachment, (attachment) => attachment.project)
+  attachments: Attachment[];
 
   @CreateDateColumn()
   createdAt: Date;
